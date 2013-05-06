@@ -7,174 +7,141 @@ project(CompilerRT)
 # runtime libraries.
 cmake_minimum_required(VERSION 2.8.8)
 
-# Compute the Clang version from the LLVM version.
-# FIXME: We should be able to reuse CLANG_VERSION variable calculated
-#        in Clang cmake files, instead of copying the rules here.
-string(REGEX MATCH "[0-9]+\\.[0-9]+(\\.[0-9]+)?" CLANG_VERSION
-       ${PACKAGE_VERSION})
-# Setup the paths where compiler-rt runtimes and headers should be stored.
-set(LIBCLANG_INSTALL_PATH lib${LLVM_LIBDIR_SUFFIX}/clang/${CLANG_VERSION})
-string(TOLOWER ${CMAKE_SYSTEM_NAME} LIBCLANG_OS_DIR)
-set(CLANG_RESOURCE_DIR ${LLVM_BINARY_DIR}/lib/clang/${CLANG_VERSION})
-set(COMPILER_RT_LIBRARY_OUTPUT_DIR ${CLANG_RESOURCE_DIR}/lib/${LIBCLANG_OS_DIR})
-set(COMPILER_RT_LIBRARY_INSTALL_DIR
-  ${LIBCLANG_INSTALL_PATH}/lib/${LIBCLANG_OS_DIR})
 
-# Add path for custom modules
-set(CMAKE_MODULE_PATH
-  ${CMAKE_MODULE_PATH}
-  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules"
+set(GENERIC_SOURCES
+  ../lib/absvdi2.c
+  ../lib/absvsi2.c
+  ../lib/absvti2.c
+  ../lib/adddf3.c
+  ../lib/addsf3.c
+  ../lib/addvdi3.c
+  ../lib/addvsi3.c
+  ../lib/addvti3.c
+  ../lib/apple_versioning.c
+  ../lib/ashldi3.c
+  ../lib/ashlti3.c
+  ../lib/ashrdi3.c
+  ../lib/ashrti3.c
+  ../lib/clear_cache.c
+  ../lib/clzdi2.c
+  ../lib/clzsi2.c
+  ../lib/clzti2.c
+  ../lib/cmpdi2.c
+  ../lib/cmpti2.c
+  ../lib/comparedf2.c
+  ../lib/comparesf2.c
+  ../lib/ctzdi2.c
+  ../lib/ctzsi2.c
+  ../lib/ctzti2.c
+  ../lib/divdc3.c
+  ../lib/divdf3.c
+  ../lib/divdi3.c
+  ../lib/divmoddi4.c
+  ../lib/divmodsi4.c
+  ../lib/divsc3.c
+  ../lib/divsf3.c
+  ../lib/divsi3.c
+  ../lib/divti3.c
+  ../lib/divxc3.c
+  ../lib/enable_execute_stack.c
+  ../lib/eprintf.c
+  ../lib/extendsfdf2.c
+  ../lib/ffsdi2.c
+  ../lib/ffsti2.c
+  ../lib/fixdfdi.c
+  ../lib/fixdfsi.c
+  ../lib/fixdfti.c
+  ../lib/fixsfdi.c
+  ../lib/fixsfsi.c
+  ../lib/fixsfti.c
+  ../lib/fixunsdfdi.c
+  ../lib/fixunsdfsi.c
+  ../lib/fixunsdfti.c
+  ../lib/fixunssfdi.c
+  ../lib/fixunssfsi.c
+  ../lib/fixunssfti.c
+  ../lib/fixunsxfdi.c
+  ../lib/fixunsxfsi.c
+  ../lib/fixunsxfti.c
+  ../lib/fixxfdi.c
+  ../lib/fixxfti.c
+  ../lib/floatdidf.c
+  ../lib/floatdisf.c
+  ../lib/floatdixf.c
+  ../lib/floatsidf.c
+  ../lib/floatsisf.c
+  ../lib/floattidf.c
+  ../lib/floattisf.c
+  ../lib/floattixf.c
+  ../lib/floatundidf.c
+  ../lib/floatundisf.c
+  ../lib/floatundixf.c
+  ../lib/floatunsidf.c
+  ../lib/floatunsisf.c
+  ../lib/floatuntidf.c
+  ../lib/floatuntisf.c
+  ../lib/floatuntixf.c
+  ../lib/gcc_personality_v0.c
+  ../lib/int_util.c
+  ../lib/lshrdi3.c
+  ../lib/lshrti3.c
+  ../lib/moddi3.c
+  ../lib/modsi3.c
+  ../lib/modti3.c
+  ../lib/muldc3.c
+  ../lib/muldf3.c
+  ../lib/muldi3.c
+  ../lib/mulodi4.c
+  ../lib/mulosi4.c
+  ../lib/muloti4.c
+  ../lib/mulsc3.c
+  ../lib/mulsf3.c
+  ../lib/multi3.c
+  ../lib/mulvdi3.c
+  ../lib/mulvsi3.c
+  ../lib/mulvti3.c
+  ../lib/mulxc3.c
+  ../lib/negdf2.c
+  ../lib/negdi2.c
+  ../lib/negsf2.c
+  ../lib/negti2.c
+  ../lib/negvdi2.c
+  ../lib/negvsi2.c
+  ../lib/negvti2.c
+  ../lib/paritydi2.c
+  ../lib/paritysi2.c
+  ../lib/parityti2.c
+  ../lib/popcountdi2.c
+  ../lib/popcountsi2.c
+  ../lib/popcountti2.c
+  ../lib/powidf2.c
+  ../lib/powisf2.c
+  ../lib/powitf2.c
+  ../lib/powixf2.c
+  ../lib/subdf3.c
+  ../lib/subsf3.c
+  ../lib/subvdi3.c
+  ../lib/subvsi3.c
+  ../lib/subvti3.c
+  ../lib/trampoline_setup.c
+  ../lib/truncdfsf2.c
+  ../lib/ucmpdi2.c
+  ../lib/ucmpti2.c
+  ../lib/udivdi3.c
+  ../lib/udivmoddi4.c
+  ../lib/udivmodsi4.c
+  ../lib/udivmodti4.c
+  ../lib/udivsi3.c
+  ../lib/udivti3.c
+  ../lib/umoddi3.c
+  ../lib/umodsi3.c
+  ../lib/umodti3.c
   )
-include(AddCompilerRT)
+add_library(CompilerRT-static STATIC ${GENERIC_SOURCES})
+set_target_properties(CompilerRT-static PROPERTIES
+                      OUTPUT_NAME "CompilerRT"
+                     )
 
-set(COMPILER_RT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-# Setup custom SDK sysroots.
-set(COMPILER_RT_DARWIN_SDK_SYSROOT ${COMPILER_RT_SOURCE_DIR}/SDKs/darwin)
-set(COMPILER_RT_LINUX_SDK_SYSROOT ${COMPILER_RT_SOURCE_DIR}/SDKs/linux)
-
-# Detect whether the current target platform is 32-bit or 64-bit, and setup
-# the correct commandline flags needed to attempt to target 32-bit and 64-bit.
-if(CMAKE_SIZEOF_VOID_P EQUAL 4 OR LLVM_BUILD_32_BITS)
-  set(TARGET_64_BIT_CFLAGS "-m64")
-  set(TARGET_32_BIT_CFLAGS "")
-else()
-  if(NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
-    message(FATAL_ERROR "Please use a sane architecture with 4 or 8 byte pointers.")
-  endif()
-  set(TARGET_64_BIT_CFLAGS "")
-  set(TARGET_32_BIT_CFLAGS "-m32")
-endif()
-
-# List of architectures we can target.
-set(COMPILER_RT_SUPPORTED_ARCH)
-
-function(get_target_flags_for_arch arch out_var)
-  list(FIND COMPILER_RT_SUPPORTED_ARCH ${arch} ARCH_INDEX)
-  if(ARCH_INDEX EQUAL -1)
-    message(FATAL_ERROR "Unsupported architecture: ${arch}")
-  else()
-    set(${out_var} ${TARGET_${arch}_CFLAGS} PARENT_SCOPE)
-  endif()
-endfunction()
-
-# Try to compile a very simple source file to ensure we can target the given
-# platform. We use the results of these tests to build only the various target
-# runtime libraries supported by our current compilers cross-compiling
-# abilities.
-set(SIMPLE_SOURCE ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/simple.c)
-file(WRITE ${SIMPLE_SOURCE} "#include <stdlib.h>\nint main() {}")
-
-# test_target_arch(<arch> <target flags...>)
-# Sets the target flags for a given architecture and determines if this
-# architecture is supported by trying to build a simple file.
-macro(test_target_arch arch)
-  set(TARGET_${arch}_CFLAGS ${ARGN})
-  try_compile(CAN_TARGET_${arch} ${CMAKE_BINARY_DIR} ${SIMPLE_SOURCE}
-              COMPILE_DEFINITIONS "${TARGET_${arch}_CFLAGS}"
-              CMAKE_FLAGS "-DCMAKE_EXE_LINKER_FLAGS:STRING=${TARGET_${arch}_CFLAGS}")
-  if(${CAN_TARGET_${arch}})
-    list(APPEND COMPILER_RT_SUPPORTED_ARCH ${arch})
-  endif()
-endmacro()
-
-if("${LLVM_NATIVE_ARCH}" STREQUAL "X86")
-  test_target_arch(x86_64 ${TARGET_64_BIT_CFLAGS})
-  test_target_arch(i386 ${TARGET_32_BIT_CFLAGS})
-elseif("${LLVM_NATIVE_ARCH}" STREQUAL "PowerPC")
-  # Explicitly set -m flag on powerpc, because on ppc64 defaults for gcc and
-  # clang are different.
-  test_target_arch(powerpc64 "-m64")
-  test_target_arch(powerpc "-m32")
-endif()
-
-# We only support running instrumented tests when we're not cross compiling
-# and target a unix-like system. On Android we define the rules for building
-# unit tests, but don't execute them.
-if("${CMAKE_HOST_SYSTEM}" STREQUAL "${CMAKE_SYSTEM}" AND UNIX AND NOT ANDROID)
-  option(COMPILER_RT_CAN_EXECUTE_TESTS "Can we execute instrumented tests" ON)
-else()
-  option(COMPILER_RT_CAN_EXECUTE_TESTS "Can we execute instrumented tests" OFF)
-endif()
-
-# Check if compiler-rt is built with libc++.
-find_flag_in_string("${CMAKE_CXX_FLAGS}" "-stdlib=libc++"
-                    COMPILER_RT_USES_LIBCXX)
-
-function(filter_available_targets out_var)
-  set(archs)
-  foreach(arch ${ARGN})
-    list(FIND COMPILER_RT_SUPPORTED_ARCH ${arch} ARCH_INDEX)
-    if(NOT (ARCH_INDEX EQUAL -1) AND CAN_TARGET_${arch})
-      list(APPEND archs ${arch})
-    endif()
-  endforeach()
-  set(${out_var} ${archs} PARENT_SCOPE)
-endfunction()
-
-# Provide some common commmandline flags for Sanitizer runtimes.
-set(SANITIZER_COMMON_CFLAGS
-  -fPIC
-  -fno-builtin
-  -fno-exceptions
-  -fomit-frame-pointer
-  -funwind-tables
-  -O3
+install(TARGETS CompilerRT-static
+  ARCHIVE DESTINATION lib
   )
-if(NOT WIN32)
-  list(APPEND SANITIZER_COMMON_CFLAGS -fvisibility=hidden)
-endif()
-# Build sanitizer runtimes with debug info.
-check_cxx_compiler_flag(-gline-tables-only SUPPORTS_GLINE_TABLES_ONLY_FLAG)
-if(SUPPORTS_GLINE_TABLES_ONLY_FLAG)
-  list(APPEND SANITIZER_COMMON_CFLAGS -gline-tables-only)
-else()
-  list(APPEND SANITIZER_COMMON_CFLAGS -g)
-endif()
-# Warnings suppressions.
-check_cxx_compiler_flag(-Wno-variadic-macros SUPPORTS_NO_VARIADIC_MACROS_FLAG)
-if(SUPPORTS_NO_VARIADIC_MACROS_FLAG)
-  list(APPEND SANITIZER_COMMON_CFLAGS -Wno-variadic-macros)
-endif()
-check_cxx_compiler_flag(-Wno-c99-extensions SUPPORTS_NO_C99_EXTENSIONS_FLAG)
-if(SUPPORTS_NO_C99_EXTENSIONS_FLAG)
-  list(APPEND SANITIZER_COMMON_CFLAGS -Wno-c99-extensions)
-endif()
-# Sanitizer may not have libstdc++, so we can have problems with virtual
-# destructors.
-check_cxx_compiler_flag(-Wno-non-virtual-dtor SUPPORTS_NO_NON_VIRTUAL_DTOR_FLAG)
-if (SUPPORTS_NO_NON_VIRTUAL_DTOR_FLAG)
-  list(APPEND SANITIZER_COMMON_CFLAGS -Wno-non-virtual-dtor)
-endif()
-
-# Setup min Mac OS X version.
-if(APPLE)
-  if(COMPILER_RT_USES_LIBCXX)
-    set(SANITIZER_MIN_OSX_VERSION 10.7)
-  else()
-    set(SANITIZER_MIN_OSX_VERSION 10.5)
-  endif()
-  list(APPEND SANITIZER_COMMON_CFLAGS
-    -mmacosx-version-min=${SANITIZER_MIN_OSX_VERSION})
-endif()
-
-# Architectures supported by Sanitizer runtimes. Specific sanitizers may
-# support only subset of these (e.g. TSan works on x86_64 only).
-filter_available_targets(SANITIZER_COMMON_SUPPORTED_ARCH
-  x86_64 i386 powerpc64 powerpc)
-
-# Add the public header's directory to the includes for all of compiler-rt.
-include_directories(include)
-add_subdirectory(include)
-
-set(SANITIZER_COMMON_LIT_TEST_DEPS
-  clang clang-headers FileCheck count not llvm-nm llvm-symbolizer
-  compiler-rt-headers)
-
-add_subdirectory(lib)
-
-if(LLVM_INCLUDE_TESTS)
-  # Currently the tests have not been ported to CMake, so disable this
-  # directory.
-  #
-  #add_subdirectory(test)
-endif()
